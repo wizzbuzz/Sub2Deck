@@ -72,7 +72,7 @@ The generated `.apkg` file can be imported into Anki.
 - Definitions are fetched from Wiktionary; internet connection required
 - Only words above the chosen difficulty rating are included
 
-## TO-DO
+## To-do
 
 - Collecting ideas
 
@@ -85,4 +85,4 @@ If I did anything wrong, please let me know.
 
 ## License
 
-MIT
+MIT, credits are appreciated
