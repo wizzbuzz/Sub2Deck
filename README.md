@@ -77,6 +77,7 @@ The generated `.apkg` file can be imported into Anki.
 - Collecting ideas
 
 ## Bugs, issues, suggestions
+- Capitalization
 
 - Please contact me, I am open to all suggestions.
 
