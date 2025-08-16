@@ -1,0 +1,7 @@
+pandas
+spacy
+genanki
+beautifulsoup4
+requests
+dcl
+pick

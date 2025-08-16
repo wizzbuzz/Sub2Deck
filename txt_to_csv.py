@@ -8,143 +8,139 @@ import requests
 from bs4 import BeautifulSoup
 
 def extract_definition(response):
+    # Extract the definition from the Wiktionary API response
     data = response["query"]["pages"][str(next(iter(response["query"]["pages"])))]["extract"]
     soup = BeautifulSoup(data, features="html.parser")
+    # Return the first line of the definition
     return(soup.dd.get_text().splitlines()[0])
 
 def get_definition(word, desired_language):
+    # Build the Wiktionary API URL for the word and language
     api_url = f"https://{desired_language}.wiktionary.org/w/api.php?action=query&format=json&prop=extracts&titles={word}"
     response = requests.get(api_url)
-    # Check if word has an entry
+    # Check if the word has an entry in Wiktionary
     success = False
     try:
         response.json()["query"]["pages"]["-1"] == None
     except:
         success = True
-    # Break if entry is missing
+    # If entry is missing, raise an exception
     if(success == False):
         raise Exception("No definition found")
-    
-    # extract_definition(response)
+    # Extract the definition from the response
     definition = extract_definition(response.json())
-    
     return definition
 
 def clean_string(string, chars):
-    # Remove characters in chars
+    # Remove specified characters from the string
     for c in chars:
         string = string.replace(c, "")
-        
     # Remove double spaces
     string = string.replace("  ", " ")
-    
-    # Replace new line as new word
+    # Replace new lines with spaces
     string = string.replace("\n", " ")
-    
-    # Lowercase all words
+    # Convert to lowercase
     string = string.lower()
-    
-    # Remove trailing spaces
+    # Remove leading/trailing spaces
     string = string.strip()
     return string
 
 def get_difficulty(maxFrequency, word):
+    # Calculate difficulty based on frequency, length, diacritics, and stopword status
     difficulty_frequency = round(((maxFrequency - word["frequency"]) / (maxFrequency - 1)) * 25)
     difficulty_length = round((word["length"] / 23) * 25)
     difficulty_diacritic = 0 if word["diacriticCount"] == 0 else 25
     difficulty_stop = 0 if word["stop"] == True else 25
-    # print(word["word"], difficulty_frequency, difficulty_length, difficulty_diacritic, difficulty_stop)
+    # Sum up difficulty components
     difficulty = difficulty_frequency + difficulty_length + difficulty_diacritic + difficulty_stop
+    # Store difficulty breakdown in the word object
     word["difficulty"] = difficulty
     word["difficulty_frequency"] = difficulty_frequency
     word["difficulty_length"] = difficulty_length
     word["difficulty_diacritic"] = difficulty_diacritic
     word["difficulty_stop"] = difficulty_stop
-    
     return word
 
 def main():
-    nlp = spacy.load("es_core_news_md")
 
+    # Set debug mode and default values
     debug = False
     file_location = "input.txt"
     output_file_location = "debug"
     desired_language = "es"
     desired_difficulty_rating = 30
 
+    # Load the spaCy language model
+    nlp = spacy.load("es_core_news_md")
+
     if(debug == False):
-        # User inputs txt file
+        # Prompt user for subtitle file location
         file_location = input("Please enter subtitle .txt file location (without extension): ") + ".txt"
-        # Verify txt file location
+        # Verify that the file exists
         try:
             with open(file_location):
                 print(f"File {file_location} found!")
         except:
             file_location = input(f"File {file_location} not found, please enter txt file location: ")
-        # Input txt file
+        # Prompt for output CSV file name
         output_file_location = input("Please enter .csv output file name (without extension): ")
-        # User inputs language
+        # Prompt for desired language
         desired_language = input("Please enter desired language (es, en): ")
-        # User inputs desired difficulty rating <1-100>
+        # Prompt for difficulty rating
         desired_difficulty_rating = int(input("Please enter desired difficulty rating (1-100) (if unsure, try 50): "))
+        # Prompt for spaCy package name
+        nlp = spacy.load(input("Please insert the name of the spacy package you downloaded: "))
 
-    # Debug results
+    # Debug output if enabled
     if(debug == True):
         print(file_location, desired_language, desired_difficulty_rating)
 
-    # Save file to string, remove non-letters
+    # Read the subtitle file and clean the text
     file_as_string = ""
     with open(file_location, encoding="latin-1") as f:
         file_as_string = clean_string(string=f.read(), chars=".,0123456789:->¡!¿?½")
 
-    # Lemmatize  
+    # Lemmatize the cleaned text using spaCy
     doc = nlp(file_as_string.replace("\n", " "))
 
+    # Read sentences from the subtitle file for example sentence lookup
     sentences_in_script = ""
     with open(file_location, encoding="latin-1") as f:
         sentences_in_script = f.read().splitlines()
-        
-    # Program creates a word list of txt file
+
+    # Create a word list from the lemmatized tokens
     c = Counter()
     max_frequency = float("-inf")
     word_list = {}
     for token in doc:
-        #Strip undesired part of speech
+        # Filter out undesired parts of speech
         if (token.pos_ not in set(["SPACE", "AUX","PROPN", "PRON", "SCONJ","ADV", "CCONJ", "DET", "ADP"])):
-            # Increase frequency
+            # Count frequency of each lemma
             c[token.lemma_] += 1
-            
+
             example_sentence = ""
-            #Try getting example sentence from script
+            # Try to find an example sentence containing the token
             try: 
                 example_sentence = next(sentence for sentence in sentences_in_script if token.text in sentence)
             except:
                 example_sentence = ""
-            
-            # Add object to wordlist
+
+            # Add word details to the word list
             word_list[token.lemma_.split(" ")[0]] = {
-                # Add lemma
                 "word": token.lemma_.split(" ")[0],
-                # Add frequency
                 "frequency": c[token.lemma_.split(" ")[0]],
-                # Add length
                 "length": len(token.lemma_.split(" ")[0]),
-                # Add diacritic count
                 "diacriticCount": dcl.count_diacritics(token.lemma_.split(" ")[0]),
-                # Add part of speech
                 "POS": token.pos_,
-                # Add is stop
                 "stop": token.is_stop,
-                # Add sentence in script
                 "sentence in script": example_sentence
             }
-            
-            # Update max frequency if it is higher than the old value
+
+            # Update max frequency if needed
             if(c[token.lemma_] > max_frequency):
                 max_frequency = c[token.lemma_]
-                
 
-    # Calculate difficulty for every word
+    # Filter words by difficulty rating
     word_list_difficulty_stripped = {}
     for x, obj in word_list.items():
         obj_with_difficulty = get_difficulty(max_frequency, obj)
@@ -152,13 +148,13 @@ def main():
         if(obj["difficulty"] >= desired_difficulty_rating):
             word_list_difficulty_stripped[x] = obj
 
-    # Get wiktionario 
+    # Fetch definitions for each word from Wiktionary
     word_list_with_definition = {}
     i = 0
     for x, obj in word_list_difficulty_stripped.items():
         i += 1
-        sleep(1)
-        os.system('cls' if os.name == 'nt' else 'clear')
+        sleep(1)  # Sleep to avoid rate-limiting
+        os.system('cls' if os.name == 'nt' else 'clear')  # Clear terminal for progress
 
         try: 
             print(f"Getting definition of {obj['word']}")
@@ -168,7 +164,8 @@ def main():
         except:
             print("There is no definition!")
             continue
-        
+
+    # Save the final word list with definitions to a CSV file
     df = pd.DataFrame.from_dict(word_list_with_definition, orient="index")
     df.to_csv(f"{output_file_location}.csv", encoding="latin-1", errors="replace")
 

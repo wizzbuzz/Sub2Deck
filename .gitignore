@@ -207,7 +207,7 @@ __marimo__/
 
 # Other
 *.csv
-*.txt
+input.txt
 *.apkg
 *.json
 *.cfg
