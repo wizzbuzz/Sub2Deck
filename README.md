@@ -78,6 +78,7 @@ The generated `.apkg` file can be imported into Anki.
 
 ## Bugs, issues, suggestions
 - Capitalization
+- Improve the example sentences. Right now only part of the sentences are used.
 
 - Please contact me, I am open to all suggestions.
 
