@@ -66,30 +66,29 @@ def main():
     # Set debug mode and default values
     debug = False
     file_location = "input.txt"
-    output_file_location = "debug"
+    output_file_location = "output.csv"
     desired_language = "es"
     desired_difficulty_rating = 30
 
     # Load the spaCy language model
     nlp = spacy.load("es_core_news_md")
 
-    if(debug == False):
-        # Prompt user for subtitle file location
-        file_location = input("Please enter subtitle .txt file location (without extension): ") + ".txt"
-        # Verify that the file exists
-        try:
-            with open(file_location):
-                print(f"File {file_location} found!")
-        except:
-            file_location = input(f"File {file_location} not found, please enter txt file location: ")
-        # Prompt for output CSV file name
-        output_file_location = input("Please enter .csv output file name (without extension): ")
-        # Prompt for desired language
-        desired_language = input("Please enter desired language (es, en): ")
-        # Prompt for difficulty rating
-        desired_difficulty_rating = int(input("Please enter desired difficulty rating (1-100) (if unsure, try 50): "))
-        # Prompt for spaCy package name
-        nlp = spacy.load(input("Please insert the name of the spacy package you downloaded: "))
+    # Prompt user for subtitle file location
+    file_location = (input("Please enter subtitle .txt file location (without extension): ", ) or "input") + ".txt"
+    # Verify that the file exists
+    try:
+        with open(file_location):
+            print(f"File {file_location} found!")
+    except:
+        file_location = input(f"File {file_location} not found, please enter txt file location (without extension): ")  + ".txt"
+    # Prompt for output CSV file name
+    output_file_location = (input("Please enter .csv output file name (without extension): ", ) or "output") + ".csv"
+    # Prompt for desired language
+    desired_language = input("Please enter desired language (es, en): ") or "es"
+    # Prompt for difficulty rating
+    desired_difficulty_rating = int(input("Please enter desired difficulty rating (1-100) (if unsure, try 75): ") or "75")
+    # Prompt for spaCy package name
+    nlp = spacy.load(input("Please insert the name of the spacy package you downloaded: ") or "es_core_news_md")
 
     # Debug output if enabled
     if(debug == True):
@@ -107,6 +106,23 @@ def main():
     sentences_in_script = ""
     with open(file_location, encoding="latin-1") as f:
         sentences_in_script = f.read().splitlines()
+        
+    sentences_in_script = list(filter(lambda x: "-->" not in x and x != "" and x.isdigit() == False, sentences_in_script))
+    reconstructed_sentences = []
+    temp_sentence = ""
+    for x in sentences_in_script:
+        # Add the sentence to the end of the placeholder
+        temp_sentence += " " + x
+        # If it doesnt end with a sentence ending character
+        if(x.endswith("?") or x.endswith("!") or x.endswith(".")):
+            # Add it to the reconstructed sentence list
+            reconstructed_sentences.append(temp_sentence)
+            # Reset the placeholder
+            temp_sentence = ""
+    
+    for s in reconstructed_sentences:
+        s = s.replace("  ", " ").replace("   ", " ")
+        
 
     # Create a word list from the lemmatized tokens
     c = Counter()
@@ -121,7 +137,7 @@ def main():
             example_sentence = ""
             # Try to find an example sentence containing the token
             try: 
-                example_sentence = next(sentence for sentence in sentences_in_script if token.text in sentence)
+                example_sentence = next(sentence for sentence in reconstructed_sentences if token.text in sentence)
             except:
                 example_sentence = ""
 
@@ -167,6 +183,6 @@ def main():
 
     # Save the final word list with definitions to a CSV file
     df = pd.DataFrame.from_dict(word_list_with_definition, orient="index")
-    df.to_csv(f"{output_file_location}.csv", encoding="latin-1", errors="replace")
+    df.to_csv(f"{output_file_location}", encoding="latin-1", errors="replace")
 
-    print(f"{output_file_location}.csv created succesfully.")
+    print(f"{output_file_location} created succesfully.")
