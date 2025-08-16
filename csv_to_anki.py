@@ -3,9 +3,9 @@ import genanki
 import csv
 
 def main():
-  file = open(input("Please enter .csv input file: "))
+  file = open(input("Please enter .csv input file: ") + ".csv")
   anki_file_name = input("Please enter Anki Deck name: ")
-  reader = csv.reader(file, delimiter=",")
+  reader = csv.DictReader(file, delimiter=",")
 
   model = genanki.Model(
     1607392319,
@@ -27,11 +27,14 @@ def main():
     anki_file_name)
 
   for row in reader:
-      note = genanki.Note(
-          model=model,
-          fields=[row[0], row[-1]]
-      )
-      deck.add_note(note)
+    print(row)
+    backSide = row["definition"] + "<br>Example sentence:<br>" + row["sentence in script"]
+    print(backSide)
+    note = genanki.Note(
+        model=model,
+        fields=[row["word"], backSide]
+    )
+    deck.add_note(note)
 
   genanki.Package(deck).write_to_file(f'{anki_file_name}.apkg')
   print(f"Succesfully created {anki_file_name}.apkg")
