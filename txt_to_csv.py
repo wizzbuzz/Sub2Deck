@@ -52,11 +52,16 @@ def get_difficulty(maxFrequency, word):
     difficulty_frequency = round(((maxFrequency - word["frequency"]) / (maxFrequency - 1)) * 25)
     difficulty_length = round((word["length"] / 23) * 25)
     difficulty_diacritic = 0 if word["diacriticCount"] == 0 else 25
-    difficulty_stop = 0 if word["stop"] == False else 25
-    print(word["word"], difficulty_frequency, difficulty_length, difficulty_diacritic, difficulty_stop)
+    difficulty_stop = 0 if word["stop"] == True else 25
+    # print(word["word"], difficulty_frequency, difficulty_length, difficulty_diacritic, difficulty_stop)
     difficulty = difficulty_frequency + difficulty_length + difficulty_diacritic + difficulty_stop
+    word["difficulty"] = difficulty
+    word["difficulty_frequency"] = difficulty_frequency
+    word["difficulty_length"] = difficulty_length
+    word["difficulty_diacritic"] = difficulty_diacritic
+    word["difficulty_stop"] = difficulty_stop
     
-    return difficulty
+    return word
 
 def main():
     nlp = spacy.load("es_core_news_md")
@@ -142,8 +147,8 @@ def main():
     # Calculate difficulty for every word
     word_list_difficulty_stripped = {}
     for x, obj in word_list.items():
-        difficulty = get_difficulty(max_frequency, obj)
-        obj["difficulty"] = difficulty
+        obj_with_difficulty = get_difficulty(max_frequency, obj)
+        obj = obj_with_difficulty
         if(obj["difficulty"] >= desired_difficulty_rating):
             word_list_difficulty_stripped[x] = obj
 

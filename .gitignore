@@ -14,5 +14,6 @@
 *.csv
 *.json
 *.apkg
+*.pyc
 
 # End of https://www.toptal.com/developers/gitignore/api/text
