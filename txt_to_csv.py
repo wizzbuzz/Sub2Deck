@@ -11,6 +11,8 @@ def extract_definition(response):
     # Extract the definition from the Wiktionary API response
     data = response["query"]["pages"][str(next(iter(response["query"]["pages"])))]["extract"]
     soup = BeautifulSoup(data, features="html.parser")
+    print(soup.dd.span[-1])
+    input()
     # Return the first line of the definition
     return(soup.dd.get_text().splitlines()[0])
 
@@ -99,6 +101,8 @@ def main():
     with open(file_location, encoding="latin-1") as f:
         file_as_string = clean_string(string=f.read(), chars=".,0123456789:->¡!¿?½")
 
+    # Debug override string
+    # file_as_string = "harás dejarás encontrarás enseñe subestimaré"
     # Lemmatize the cleaned text using spaCy
     doc = nlp(file_as_string.replace("\n", " "))
 
